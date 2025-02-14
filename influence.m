@@ -44,26 +44,4 @@ vb = c.*(ap.*sinth + bp.*costh);
 
 u = [ua, zeros(n,1)] + [zeros(n,1), ub];
 v = [va, zeros(n,1)] + [zeros(n,1), vb];
-
-A = -u.*sin(0) + v.*cos(0);
-B = u.*cos(0) + v.*sin(0);
-
-%A = zeros(m+1);
-%A(1:m,:) = -u.*sinth.' + v.*costh.';
-%A(m+1,1) = 1; % Kutta condition
-%A(m+1,m+1) = 1;
-%
-%% compute RHS
-%b = [cos(alf)*sinth - sin(alf)*costh, 0].';
-%
-%gamma = A \ b;
-%
-%B = u.*costh.' + v.*sinth.';
-%
-%Qt = B*gamma + cos(theta - alf);
-%Cp = 1 - Qt.^2;
-%Cn = -Cp.'*dx;
-%Ca = Cp.'*dy;
-%Cl = Cn*cos(alf) - Ca*sin(alf);
-%Cd = Cn*sin(alf) + Ca*cos(alf);
 end
