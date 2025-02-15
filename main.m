@@ -9,7 +9,7 @@ for i = numel(surfaceFiles):-1:1
     fclose(fid);
 end
 
-[foils,surfaceVortexSheets,Cp,xc] = appac2(surfaces,10,0.8,1.5,[]);
+[foils,surfaceVortexSheets,wakes,Cp,xc] = appac2(surfaces,10,0.8,1.5,[]);
 
 figure
 plot(foils.xo,foils.yo,'k.')
@@ -17,6 +17,7 @@ hold on
 for i = 1:numel(surfaceVortexSheets)
     plot(surfaceVortexSheets(i).x,surfaceVortexSheets(i).y,'r-','LineWidth',2)
 end
+plot(reshape(wakes.xo,[],2),reshape(wakes.yo,[],2),'b-')
 set(gca,'DataAspectRatio',[1 1 1],'XLim',[-0.2 2])
 
 figure

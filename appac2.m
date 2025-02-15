@@ -1,4 +1,4 @@
-function [foils,surfaceVortexSheets,Cp,xc] = appac2(surfaces,alphaDeg,xDisk,CT,options)
+function [foils,surfaceVortexSheets,wakes,Cp,xc] = appac2(surfaces,alphaDeg,xDisk,CT,options)
 nSurfs = numel(surfaces);
 R = [cosd(alphaDeg) -sind(alphaDeg);sind(alphaDeg) cosd(alphaDeg)];
 k = find(surfaces{1}(:,1) <= xDisk, 1, 'last' );
@@ -38,6 +38,8 @@ for i = 1:nSurfs
     k = k + foils.m(i) + 1;
 end
 RHS = [sin(foils.theta);zeros(nSurfs,1)];
+
+wakes = solveWake(foils,inv(A),RHS,CT,options);
 
 gamma = A \ RHS;
 
