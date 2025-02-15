@@ -27,7 +27,7 @@ foils.co = [foils.xo+foils.dx/2 foils.yo+foils.dy/2];
 
 % Create aerodynamic influence coefficient matrix
 A = zeros(M+nSurfs);
-[u,v] = influence(foils.co,foils);
+[u,v] = influence(foils.co,foils,pi);
 A(1:M,:) = -u.*sin(foils.theta) + v.*cos(foils.theta); % normal component
 B = u.*cos(foils.theta) + v.*sin(foils.theta); % tangent component
 % Kutta condition

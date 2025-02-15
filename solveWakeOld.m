@@ -1,4 +1,4 @@
-function rightRunningWakes = solveWake(foils,Ainv,RHS,CT,options)
+function rightRunningWakes = solveWakeOld(foils,Ainv,RHS,CT,options)
 % Default options
 opts.MaxIterations = 50;
 opts.FunctionTolerance = 1e-6;
@@ -31,15 +31,15 @@ for iter = 1:30
     leftRunningWakes.dy = -rightRunningWakes.dy;
     leftRunningWakes.theta = atan2(leftRunningWakes.dy,leftRunningWakes.dx);
 
-    [u,v] = influence(foils.co,rightRunningWakes);
+    [u,v] = influence(foils.co,rightRunningWakes,pi);
     A = -u.*sin(foils.theta) + v.*cos(foils.theta);
     g = Ainv*(RHS - [A*gamma;-gamma(1);-gamma(opts.NumPanels+1);zeros(numel(foils.m)-2,1)]);
 
-    [uu,vv] = influence(collocPoints,foils);
+    [uu,vv] = influence(collocPoints,foils,pi);
     u = uu*g + 1; v = vv*g;
-    [uu,vv] = influence(collocPoints,rightRunningWakes);
+    [uu,vv] = influence(collocPoints,rightRunningWakes,pi);
     u = u + uu/2*gamma; v = v + vv/2*gamma;
-    [uu,vv] = influence(collocPoints,leftRunningWakes);
+    [uu,vv] = influence(collocPoints,leftRunningWakes,pi);
     u = u + uu/2*gamma; v = v + vv/2*gamma;
 
     rightRunningWakes.dy = v./u.*rightRunningWakes.dx;

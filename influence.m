@@ -1,6 +1,7 @@
-function [u,v] = influence(co,af)
+function [u,v] = influence(co,af,selfAngle)
 % co: N-by-2 array of collocation points where influences are calculated
 % af: unified struct of initialized surfaces
+% selfAngle: angular difference for the influence of a panel on itself
 n = size(co,1);
 m = sum([af.m]); % total number of panels
 
@@ -22,7 +23,7 @@ theta1 = atan2(yp,xp);
 theta2 = atan2(yp,xp-x2);
 dtheta = theta2 - theta1; % precompute
 k = (abs(yp) < 1e-12) & (xp > 0) & (xp < x2);
-dtheta(k) = pi; % fix angular difference for self-induction
+dtheta(k) = selfAngle; % fix angular difference for self-induction
 
 %r1 = sqrt(xp.^2 + yp.^2); r2 = sqrt((xp-x2).^2 + yp.^2); ln = log(r2./r1);
 ln = 0.5*log(((xp-x2).^2 + yp.^2)./(xp.^2 + yp.^2)); % precompute
