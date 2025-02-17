@@ -35,6 +35,7 @@ am = -yp.*ln + (x2 - xp).*dtheta;
 bm = (x2 - xp).*ln - x2 + yp.*dtheta;
 c = 1./(2*pi*x2);
 
+% Velocity decomposition used in Katz and Plotkin Eq. 11.103
 ua = c.*(am.*costh - bm.*sinth);
 ub = c.*(ap.*costh - bp.*sinth);
 va = c.*(am.*sinth + bm.*costh);
@@ -47,5 +48,4 @@ for i = 1:numel(af.m);
     u(:,k+i+(0:af.m(i))) = [ua(:,k+(1:af.m(i))), zeros(n,1)] + [zeros(n,1), ub(:,k+(1:af.m(i)))];
     v(:,k+i+(0:af.m(i))) = [va(:,k+(1:af.m(i))), zeros(n,1)] + [zeros(n,1), vb(:,k+(1:af.m(i)))];
     k = k + af.m(i);
-end
 end
