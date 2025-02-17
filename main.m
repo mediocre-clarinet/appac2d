@@ -1,6 +1,8 @@
 clear all
 close all
 
+addpath('./mesh2d'); initmsh();
+
 surfaceFiles = {'mainVec0.dat','nacelleVec0.dat'};
 for i = numel(surfaceFiles):-1:1
     fid = fopen(['airfoils/' surfaceFiles{i}],'r');
