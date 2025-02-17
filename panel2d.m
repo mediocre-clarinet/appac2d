@@ -51,6 +51,13 @@ Cp(k1+1:foils.m(1)+k2-1) = Cp(k1+1:foils.m(1)+k2-1) + 2*CT;
 
 % Contour plotting under construction %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 N = wakes.m(1);
+% Distinguish jet and outer flow evaluation by making one wake left-running
+wakes.xo(1:N) = wakes.xo(1:N) + wakes.dx(1:N);
+wakes.yo(1:N) = wakes.yo(1:N) + wakes.dy(1:N);
+wakes.dx(1:N) = -wakes.dx(1:N);
+wakes.dy(1:N) = -wakes.dy(1:N);
+wakes.theta(1:N) = atan2(wakes.dy(1:N),wakes.dx(1:N));
+
 node = [foils.co(k1+1:foils.m(1),:); ...
         wakes.co(1:N-1,:); ...
         flipud(wakes.co(N+1:2*N-1,:)); ...
@@ -61,15 +68,20 @@ opts.kind = 'delfront';
 opts.rho2 = 1;
 [vert,etri,tria,tnum] = refine2(node,edge,[],opts);
 
+[U,V] = influence(vert,foils,1);
+u = U*foils.gamma + 1;
+v = V*foils.gamma;
+[U,V] = influence(vert,wakes,-1); % -1 for jet interior
+u = u + U*wakes.gamma;
+v = v + V*wakes.gamma;
+
 figure;
-patch('faces',tria(:,1:3),'vertices',vert, ...
-    'facecolor','w', ...
-    'edgecolor',[.2,.2,.2]);
+cmap = crameri('berlin');
+colormap(cmap);
+patch('Faces',tria(:,1:3),'Vertices',vert, ...
+      'FaceVertexCData',sqrt(u.*u + v.*v), ...
+      'FaceColor','interp','EdgeColor','none');
 hold on; axis image off;
-patch('faces',edge(:,1:2),'vertices',node, ...
-    'facecolor','w', ...
-    'edgecolor',[.1,.1,.1], ...
-    'linewidth',1.5);
 
 node = [flipud(wakes.co(1:N-1,:)); ...
         foils.co(1:k1+1,:); ...
@@ -84,10 +96,16 @@ opts.kind = 'delfront';
 opts.rho2 = 1;
 [vert,etri,tria,tnum] = refine2(node,edge,[],opts);
 
-patch('faces',tria(:,1:3),'vertices',vert, ...
-    'facecolor','w', ...
-    'edgecolor',[.2,.2,.2]);
-patch('faces',edge(:,1:2),'vertices',node, ...
-    'facecolor','w', ...
-    'edgecolor',[.1,.1,.1], ...
-    'linewidth',1.5);
+[U,V] = influence(vert,foils,1);
+u = U*foils.gamma + 1;
+v = V*foils.gamma;
+[U,V] = influence(vert,wakes,1);
+u = u + U*wakes.gamma;
+v = v + V*wakes.gamma;
+
+patch('Faces',tria(:,1:3),'Vertices',vert, ...
+      'FaceVertexCData',sqrt(u.*u + v.*v), ...
+      'FaceColor','interp','EdgeColor','none');
+
+cl = get(gca,'CLim');
+set(gca,'CLim',max(abs(cl-1))*[-1 1]+1);

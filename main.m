@@ -6,8 +6,7 @@ addpath('./mesh2d'); initmsh();
 surfaceFiles = {'mainVec0.dat','nacelleVec0.dat'};
 for i = numel(surfaceFiles):-1:1
     fid = fopen(['airfoils/' surfaceFiles{i}],'r');
-    coords = fscanf(fid,'%f %f',[2 Inf]);
-    surfaces{i} = coords.';
+    surfaces{i} = cell2mat(textscan(fid,'%f%f','Delimiter',{'\t',','}));
     fclose(fid);
 end
 
