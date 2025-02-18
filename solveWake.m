@@ -1,5 +1,6 @@
-function [wakes,gamma,iter,E] = solveWake(foils,Ainv,RHS,CT)
-% Calculate the global circulation solution using Shollenberger's algorithm:
+function [wakes,gamma,iter,E] = solveWake(foils,Ainv,RHS,CT,opts)
+% SOLVEWAKE  Solve for the global circulation solution and wake shape using
+% Shollenberger's algorithm:
 %   1. Guess initial wake shape and bound circulation
 %   2. Calculate induced velocities on the airfoil surfaces due to the wake
 %   3. Solve circulation strengths on the airfoil surfaces such that there is
@@ -10,14 +11,6 @@ function [wakes,gamma,iter,E] = solveWake(foils,Ainv,RHS,CT)
 %      average velocity across the wake boundary
 %   7. If the new wake circulation is close to the previous solution, exit the
 %      program, else return to step 2
-opts.MaxIterations = 50;
-opts.FunctionTolerance = 1e-6;
-opts.RelaxationFactor = 0.5;
-opts.NumPanels = 100;
-opts.WakeLengthChords = 9;
-opts.GammaDecayChords = 3;
-opts.NodeSpacing = 'cosine';
-opts.Display = 'iter';
 
 % Attach flat wake to the trailing edge of each propulsive element %%%%%%%%%%%
 N = opts.NumPanels + 1; % add far-field panel to the panel count
@@ -94,7 +87,7 @@ while (E > opts.FunctionTolerance) && (iter < opts.MaxIterations)
     % Calculate residual between current and previous iteration %%%%%%%%%%%%%%
     E = sum(abs(gnew - wakes.gamma))/(2*N*gammaInf);
 
-    % Adjust wake circulation forwarded to next iteration by relaxation factor
+    % Adjust wake circulation by a relaxation factor %%%%%%%%%%%%%%%%%%%%%%%%%
     wakes.gamma = opts.RelaxationFactor*gnew + ...
         (1 - opts.RelaxationFactor)*wakes.gamma;
 end
