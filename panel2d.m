@@ -174,8 +174,8 @@ end
 
 if mod(nArgs,2) == 0
     if ~(isnumeric(args{1}) && isscalar(args{1}) && ...
-         isnumeric(args{2}) && isscalar(args{2}))|| ...
-         ischar   (args{1})
+         isnumeric(args{2}) && isscalar(args{2}))&& ...
+        ~ischar   (args{1})
         error('panel2d:incorrectInputClass','Incorrect input class.');
     end
     NameValueStartIdx = isnumeric(args{1})*3;
