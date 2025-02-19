@@ -10,7 +10,8 @@ for i = numel(surfaceFiles):-1:1
     fclose(fid);
 end
 
-[Cp,xc] = panel2d(surfaces,5,1,0.8);
+opts.FunctionTolerance = 1e-5;
+[Cp,xc] = panel2d(surfaces,5,1,0.8,opts);
 
 figure;
 hold on;
