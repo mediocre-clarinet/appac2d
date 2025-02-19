@@ -1,4 +1,4 @@
-function [foils,wakes,Cp,xc] = panel2d(surfaces,alphaDeg,varargin)
+function [Cp,xc] = panel2d(surfaces,alphaDeg,varargin)
 % PANEL2D  Panel method in two dimensions.
 %   PANEL2D(SURFACES,ALPHADEG)
 %   PANEL2D(SURFACES,ALPHADEG,CT,XDISK)
@@ -49,7 +49,6 @@ RHS = [sin(foils.theta);zeros(nSurfs,1)];
 if oper == 1
     foils.gamma = A \ RHS;
     Qtan = B*foils.gamma + cos(foils.theta);
-    wakes = [];
 else
     [wakes,foils.gamma,iter,E] = solveWake(foils,inv(A),RHS,CT,wakeOptions);
     [U,V] = influence(foils.co,wakes,1);
@@ -57,14 +56,15 @@ else
     Qtan = B*foils.gamma + cos(foils.theta) + D*wakes.gamma;
 end
 
-Cp = 1 - Qtan.^2;
-xc = foils.co*R(1,:).';
+Cp = mat2cell(1 - Qtan.^2, foils.m);
+xc = mat2cell(foils.co*R(1,:).', foils.m);
 
 if oper == 2
     % Correct Cp aft of the actuator disk where the total pressure is higher
-    k1 = find(xc(1:foils.m(1)) < xDisk, 1, 'last');
-    k2 = find(xc(foils.m(1)+(1:foils.m(2))) < xDisk, 1, 'first');
-    Cp(k1+1:foils.m(1)+k2-1) = Cp(k1+1:foils.m(1)+k2-1) + 2*CT;
+    k1 = find(xc{1} < xDisk, 1, 'last');
+    k2 = find(xc{2} < xDisk, 1, 'first');
+    Cp{1}(k1+1:end) = Cp{1}(k1+1:end) + 2*CT;
+    Cp{2}(1:k2-1) = Cp{2}(1:k2-1) + 2*CT;
 end
 return
 
@@ -163,6 +163,8 @@ wakeOptions.Display = 'iter';
 
 options.Colormap = 'berlin';
 options.Mesh = 'off';
+options.Plot = 'off';
+options.CData = 'q';
 
 % Perform checks on input arguments and parse accordingly %%%%%%%%%%%%%%%%%%%%
 nArgs = numel(args);
