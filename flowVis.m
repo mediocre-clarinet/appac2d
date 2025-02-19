@@ -103,7 +103,7 @@ cl = get(gca,'CLim');
 set(gca,'CLim',max(abs(cl-1))*[-1 1]+1);
 
 % Draw streamlines %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-FlowP = tristream(TRI,VTX(:,1),VTX(:,2),UX,UY,zeros(1,41)-1.99,-1:0.05:1);
+FlowP = tristream(TRI,VTX(:,1),VTX(:,2),UX,UY,zeros(1,51)-1.99,-1.5:0.05:1);
 for i = 1:numel(FlowP)
     plot(FlowP(i).x,FlowP(i).y,'-','Color',LineColor);
 end

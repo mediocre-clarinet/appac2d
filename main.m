@@ -1,17 +1,25 @@
-clear all
+clear
 close all
 
-addpath('./mesh2d'); initmsh();
+% Use full paths when possible to be robust
+filename = mfilename('fullpath');
+filepath = fileparts( filename );
 
-surfaceFiles = {'mainVec0.dat','nacelleVec0.dat'};
+addpath([filepath '/mesh2d']); initmsh();
+
+% Medium-scale high-geometric-complexity aeropropulsive problem %%%%%%%%%%%%%%
+surfaceFiles = {'dengwirda/mainElement.dat','onr-dep/nacelleVec30.dat', ...
+    'dengwirda/foreFlap.dat','dengwirda/aftFlap.dat'};
 for i = numel(surfaceFiles):-1:1
-    fid = fopen(['airfoils/' surfaceFiles{i}],'r');
+    fid = fopen([filepath '/airfoils/' surfaceFiles{i}],'r');
     surfaces{i} = cell2mat(textscan(fid,'%f%f','Delimiter',{'\t',','}));
     fclose(fid);
 end
+% Shift the nacelle to an appropriate position
+surfaces{2} = surfaces{2} + [-0.1471 0.073046];
 
-opts.FunctionTolerance = 1e-5;
-[Cp,xc] = panel2d(surfaces,5,1,0.8,opts);
+opts.NumPanels = 200; % optionally pass options to the wake solver
+[Cp,xc] = panel2d(surfaces,0,1,0.67,opts,'Plot','on','Colormap','vik');
 
 figure;
 hold on;
