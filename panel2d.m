@@ -66,9 +66,38 @@ if oper == 2
     Cp{1}(k1+1:end) = Cp{1}(k1+1:end) + 2*CT;
     Cp{2}(1:k2-1) = Cp{2}(1:k2-1) + 2*CT;
 end
-return
 
 % Create contour plot of velocity magnitude %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Meshing settings
+opts.kind = 'delfront';
+opts.rho2 = 1;
+
+figure;
+cmap = crameri(options.Colormap);
+colormap(cmap);
+hold on; axis image off;
+
+if oper == 1
+    j = cumsum(foils.m);
+    node = [foils.co;4 2;-2 2;-2 -2;4 -2];
+    edge = (1:j(end)+4).' + [0 1]; edge(j,2) = edge(j,2) - foils.m.';
+    edge(end,2) = j(end) + 1;
+    [vert,etri,tria,tnum] = refine2(node,edge,[],opts);
+    [U,V] = influence(vert,foils,1);
+    u = U*foils.gamma + 1;
+    v = V*foils.gamma;
+    patch('Faces',tria,'Vertices',vert, ...
+        'FaceVertexCData',sqrt(u.*u + v.*v), ...
+        'FaceColor','interp','EdgeColor','none');
+    cl = get(gca,'CLim');
+    set(gca,'CLim',max(abs(cl-1))*[-1 1]+1);
+    FlowP = tristream(tria,vert(:,1),vert(:,2),u,v,zeros(1,41)-1.99,-1:0.05:1);
+    for i = 1:numel(FlowP)
+        plot(FlowP(i).x,FlowP(i).y,'-','Color',[.5 .5 .5]);
+    end
+    return
+end
+
 N = wakes.m(1);
 % Distinguish jet and outer flow evaluation by making one wake left-running
 wakes.xo(1:N) = wakes.xo(1:N) + wakes.dx(1:N);
@@ -76,10 +105,6 @@ wakes.yo(1:N) = wakes.yo(1:N) + wakes.dy(1:N);
 wakes.dx(1:N) = -wakes.dx(1:N);
 wakes.dy(1:N) = -wakes.dy(1:N);
 wakes.theta(1:N) = atan2(wakes.dy(1:N),wakes.dx(1:N));
-
-% Meshing settings
-opts.kind = 'delfront';
-opts.rho2 = 1;
 
 % Mesh jet volume
 node = [foils.co(k1+1:foils.m(1),:); ...
@@ -89,22 +114,18 @@ node = [foils.co(k1+1:foils.m(1),:); ...
 
 edge = (1:size(node,1)).' + [0 1]; edge(end,2) = 1;
 
-[vert,etri,tria,tnum] = refine2(node,edge,[],opts);
+[vert{1},etri,tria{1},tnum] = refine2(node,edge,[],opts);
 
-[U,V] = influence(vert,foils,1);
-u = U*foils.gamma + 1;
-v = V*foils.gamma;
-[U,V] = influence(vert,wakes,-1); % -1 for jet interior
-u = u + U*wakes.gamma;
-v = v + V*wakes.gamma;
+[U,V] = influence(vert{1},foils,1);
+u{1} = U*foils.gamma + 1;
+v{1} = V*foils.gamma;
+[U,V] = influence(vert{1},wakes,-1); % -1 for jet interior
+u{1} = u{1} + U*wakes.gamma;
+v{1} = v{1} + V*wakes.gamma;
 
-figure;
-cmap = crameri(options.Colormap);
-colormap(cmap);
-patch('Faces',tria(:,1:3),'Vertices',vert, ...
-      'FaceVertexCData',sqrt(u.*u + v.*v), ...
-      'FaceColor','interp','EdgeColor','none');
-hold on; axis image off;
+patch('Faces',tria{1},'Vertices',vert{1}, ...
+    'FaceVertexCData',sqrt(u{1}.^2 + v{1}.^2), ...
+    'FaceColor','interp','EdgeColor','none');
 
 % Mesh outer volume
 node = [flipud(wakes.co(1:N-1,:)); ...
@@ -126,21 +147,28 @@ if nSurfs > 2
     edge = [edge;edge2];
 end
 
-[vert,etri,tria,tnum] = refine2(node,edge,[],opts);
+[vert{2},etri,tria{2},tnum] = refine2(node,edge,[],opts);
 
-[U,V] = influence(vert,foils,1);
-u = U*foils.gamma + 1;
-v = V*foils.gamma;
-[U,V] = influence(vert,wakes,1);
-u = u + U*wakes.gamma;
-v = v + V*wakes.gamma;
+[U,V] = influence(vert{2},foils,1);
+u{2} = U*foils.gamma + 1;
+v{2} = V*foils.gamma;
+[U,V] = influence(vert{2},wakes,1);
+u{2} = u{2} + U*wakes.gamma;
+v{2} = v{2} + V*wakes.gamma;
 
-patch('Faces',tria(:,1:3),'Vertices',vert, ...
-      'FaceVertexCData',sqrt(u.*u + v.*v), ...
-      'FaceColor','interp','EdgeColor','none');
+patch('Faces',tria{2},'Vertices',vert{2}, ...
+    'FaceVertexCData',sqrt(u{2}.^2 + v{2}.^2), ...
+    'FaceColor','interp','EdgeColor','none');
 
 cl = get(gca,'CLim');
 set(gca,'CLim',max(abs(cl-1))*[-1 1]+1);
+
+FlowP = tristream([tria{1};tria{2}+size(vert{1},1)], ...
+            [vert{1}(:,1);vert{2}(:,1)],[vert{1}(:,2);vert{2}(:,2)], ...
+            [u{1};u{2}],[v{1};v{2}],zeros(1,41)-1.99,-1:0.05:1);
+for i = 1:numel(FlowP)
+    plot(FlowP(i).x,FlowP(i).y,'-','Color',[.5 .5 .5]);
+end
 end
 
 
