@@ -67,7 +67,7 @@ if nargin ~= 2
     if numel(foils.m) > 2
         j = cumsum(foils.m(3:end));
         edge = [edge;(1:j(end)).'+[0 1]+size(node,1)];
-        edge(size(node,1)+j,2) = edge(size(node,1)+j,2) - j.';
+        edge(size(node,1)+j,2) = edge(size(node,1)+j,2) - foils.m(3:end).';
         node = [node;foils.co(foils.m(1)+foils.m(2)+1:end,:)];
     end
 
@@ -90,7 +90,7 @@ else
     edge = (1:j(end)+4).' + [0 1]; edge(j,2) = edge(j,2) - foils.m.';
     edge(end,2) = j(end) + 1;
     [VTX,~,TRI,~] = refine2(node,edge,[],opts);
-    [U,V] = influence(vert,foils,1);
+    [U,V] = influence(VTX,foils,1);
     UX = U*foils.gamma + 1;
     UY = V*foils.gamma;
 end
