@@ -7,6 +7,11 @@ function [foils,wakes,Cp,xc] = panel2d(surfaces,alphaDeg,varargin)
 [oper,CT,xDisk,wakeOptions,options] = parseInput(varargin);
 
 nSurfs = numel(surfaces);
+
+if ((oper == 2) && (nSurfs == 1)) || (nSurfs == 0)
+    error('panel2d:invalidInput','Not enough surfaces.');
+end
+
 R = [cosd(alphaDeg) -sind(alphaDeg);sind(alphaDeg) cosd(alphaDeg)];
 
 % Determine total number of surface panels for memory allocation %%%%%%%%%%%%%
@@ -44,26 +49,24 @@ RHS = [sin(foils.theta);zeros(nSurfs,1)];
 if oper == 1
     foils.gamma = A \ RHS;
     Qtan = B*foils.gamma + cos(foils.theta);
-    Cp = 1 - Qtan.^2;
-    xc = foils.co*R(1,:).';
     wakes = [];
-    return
+else
+    [wakes,foils.gamma,iter,E] = solveWake(foils,inv(A),RHS,CT,wakeOptions);
+    [U,V] = influence(foils.co,wakes,1);
+    D = U.*cos(foils.theta) + V.*sin(foils.theta);
+    Qtan = B*foils.gamma + cos(foils.theta) + D*wakes.gamma;
 end
-[wakes,foils.gamma,iter,E] = solveWake(foils,inv(A),RHS,CT,wakeOptions);
 
-
-% Extract desired derived quantities using the solution %%%%%%%%%%%%%%%%%%%%%%
-[U,V] = influence(foils.co,wakes,1);
-D = U.*cos(foils.theta) + V.*sin(foils.theta);
-Qtan = B*foils.gamma + cos(foils.theta) + D*wakes.gamma;
 Cp = 1 - Qtan.^2;
 xc = foils.co*R(1,:).';
 
-% Correct Cp aft of the actuator disk where the total pressure is higher %%%%%
-k1 = find(xc(1:foils.m(1)) < xDisk, 1, 'last');
-k2 = find(xc(foils.m(1)+(1:foils.m(2))) < xDisk, 1, 'first');
-Cp(k1+1:foils.m(1)+k2-1) = Cp(k1+1:foils.m(1)+k2-1) + 2*CT;
-
+if oper == 2
+    % Correct Cp aft of the actuator disk where the total pressure is higher
+    k1 = find(xc(1:foils.m(1)) < xDisk, 1, 'last');
+    k2 = find(xc(foils.m(1)+(1:foils.m(2))) < xDisk, 1, 'first');
+    Cp(k1+1:foils.m(1)+k2-1) = Cp(k1+1:foils.m(1)+k2-1) + 2*CT;
+end
+return
 
 % Create contour plot of velocity magnitude %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 N = wakes.m(1);
@@ -141,9 +144,9 @@ set(gca,'CLim',max(abs(cl-1))*[-1 1]+1);
 end
 
 
-
-
+% Helper functions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [oper,CT,xDisk,wakeOptions,options] = parseInput(args)
+% PARSEINPUT  Handle input arguments from the various input syntaxes.
 oper = 1; % operating mode (vanilla:1, appac:2)
 CT = 0;   % values of CT and xDisk are inconsequential when oper=1
 xDisk = 0;
@@ -178,7 +181,7 @@ if mod(nArgs,2) == 0
         ~ischar   (args{1})
         error('panel2d:incorrectInputClass','Incorrect input class.');
     end
-    NameValueStartIdx = isnumeric(args{1})*3;
+    NameValueStartIdx = isnumeric(args{1})*2 + 1;
 else
     if (~isnumeric(args{1}) || ~isscalar(args{1}) || ...
         ~isnumeric(args{2}) || ~isscalar(args{2}) || ...
@@ -186,12 +189,26 @@ else
         error('panel2d:incorrectInputClass','Incorrect input class.');
     end
     NameValueStartIdx = 4;
-    % populate wakeOptions (args{3})
+    wakeOptions = updateOptions(wakeOptions, ...
+                    [fieldnames(args{3}) struct2cell(args{3})].');
 end
 if NameValueStartIdx > 2
     oper = 2;
     CT = args{1};
     xDisk = args{2};
-    % populate options using args(NameValueStartIdx:nArgs)
+end
+options = updateOptions(options,args(NameValueStartIdx:nArgs));
+end
+
+function options = updateOptions(options,NameValuePairs)
+% UPDATEOPTIONS  Update options using pairs of Name-Value arguments.
+names = fieldnames(options);
+for i = 1:2:numel(NameValuePairs)-1
+    k = strcmpi(names,NameValuePairs{i});
+    if ~any(k)
+        error('panel2d:invalidOptions', ...
+            sprintf('%s is not a recognized option.',NameValuePairs{i}));
+    end
+    options.(names{k}) = NameValuePairs{i+1};
 end
 end
