@@ -83,7 +83,7 @@ if nargin ~= 2
     %---------------------------------- Merge the two meshes
     TRI = [tria{1};tria{2}+size(vert{1},1)];
     VTX = [vert{1};vert{2}];
-    UX = [u{1};u{2}]; UY = [v{1};v{2}];
+    data.u = [u{1};u{2}]; data.v = [v{1};v{2}];
 else
     j = cumsum(foils.m);
     node = [foils.co;4 2;-2 2;-2 -2;4 -2];
@@ -91,19 +91,32 @@ else
     edge(end,2) = j(end) + 1;
     [VTX,~,TRI,~] = refine2(node,edge,[],opts);
     [U,V] = influence(VTX,foils,1);
-    UX = U*foils.gamma + 1;
-    UY = V*foils.gamma;
+    data.u = U*foils.gamma + 1;
+    data.v = V*foils.gamma;
+end
+
+data.q = sqrt(data.u.^2 + data.v.^2);
+data.p = 1 - data.q.^2;
+if nargin ~= 2
+    CT = 0.5*((abs(wakes.gamma(N+1)) + 1)^2 - 1);
+    data.p(1:numel(u{1})) = data.p(1:numel(u{1})) + 2*CT;
+end
+
+if strcmpi(options.CData,'p') || strcmpi(options.CData,'v')
+    pivot = 0;
+else
+    pivot = 1;
 end
 
 % Create the contour plot %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 patch('Faces',TRI,'Vertices',VTX, ...
-    'FaceVertexCData',sqrt(UX.^2 + UY.^2), ...
+    'FaceVertexCData',data.(lower(options.CData)), ...
     'FaceColor','interp','EdgeColor',EdgeColor);
 cl = get(gca,'CLim');
-set(gca,'CLim',max(abs(cl-1))*[-1 1]+1);
+set(gca,'CLim',max(abs(cl-pivot))*[-1 1]+pivot);
 
 % Draw streamlines %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-FlowP = tristream(TRI,VTX(:,1),VTX(:,2),UX,UY,zeros(1,51)-1.99,-1.5:0.05:1);
+FlowP = tristream(TRI,VTX(:,1),VTX(:,2),data.u,data.v,zeros(1,51)-1.99,-1.5:0.05:1);
 for i = 1:numel(FlowP)
     plot(FlowP(i).x,FlowP(i).y,'-','Color',LineColor);
 end

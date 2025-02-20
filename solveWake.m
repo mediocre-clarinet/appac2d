@@ -36,10 +36,27 @@ gammaInf = sqrt(2*CT + 1) - 1;
 wakes.gamma = repelem([gammaInf;-gammaInf],N+1);
 gnew = wakes.gamma;
 
+if strcmpi(opts.Display,'iter') || strcmpi(opts.Display,'final')
+    figure;
+    hold on; axis image; k = 0;
+    for i = 1:numel(foils.m)
+        plot(foils.xo(k+[1:foils.m(i) 1]),foils.yo(k+[1:foils.m(i) 1]),'k-');
+        k = k + foils.m(i);
+    end
+    h(1) = plot(wakes.co(1:N-1,1),wakes.co(1:N-1,2),'b-');
+    h(2) = plot(wakes.co(N+1:2*N-1,1),wakes.co(N+1:2*N-1,2),'r-');
+end
+
 iter = 0;
 E = 1;
 while (E > opts.FunctionTolerance) && (iter < opts.MaxIterations)
     iter = iter + 1;
+
+    if strcmpi(opts.Display,'iter')
+        set(h(1),'YData',wakes.co(1:N-1,2));
+        set(h(2),'YData',wakes.co(N+1:2*N-1,2));
+        drawnow;
+    end
 
     % Solve airfoil circulation distribution %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     [U,V] = influence(foils.co,wakes,1);
@@ -90,4 +107,10 @@ while (E > opts.FunctionTolerance) && (iter < opts.MaxIterations)
     % Adjust wake circulation by a relaxation factor %%%%%%%%%%%%%%%%%%%%%%%%%
     wakes.gamma = opts.RelaxationFactor*gnew + ...
         (1 - opts.RelaxationFactor)*wakes.gamma;
+end
+
+if strcmpi(opts.Display,'iter') || strcmpi(opts.Display,'final')
+    set(h(1),'YData',wakes.co(1:N-1,2));
+    set(h(2),'YData',wakes.co(N+1:2*N-1,2));
+    drawnow;
 end
