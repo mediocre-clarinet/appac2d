@@ -36,24 +36,27 @@
 %   is less than the distance traveled during the last pseudo-time-step.
 function FlowP=tristream(tria,x,y,u,v,x0,y0,verbose,maxits,Ltol,dLtol)
 
-if(nargin<8 )  verbose=0; end; % flag to report progress
-if(nargin<9 ) maxits=1e4; end; % maximum number of iterations
-if(nargin<10)  Ltol=1e-2; end; % flowpath "out-of-triangle" tolerance
-if(nargin<11) dLtol=5e-1; end; % flowpath "curvature" tolerance
+if(nargin<8 );  verbose=0; end % flag to report progress
+if(nargin<9 ); maxits=1e4; end % maximum number of iterations
+if(nargin<10);  Ltol=1e-2; end % flowpath "out-of-triangle" tolerance
+if(nargin<11); dLtol=5e-1; end % flowpath "curvature" tolerance
 
 dt_max=1e24; % maximum timestep
 
-Nnd=length(x); Ntri=length(tria); Npaths=length(x0);
+Npaths=length(x0);
 
 % make sure orientations are correct
 x=x(:).'; y=y(:).'; x0=x0(:).'; y0=y0(:).'; u=u(:).'; v=v(:).';
-if(size(tria,1)~=3) tria=tria.'; end;
+if(size(tria,1)~=3); tria=tria.'; end
 
 % initialize flowpaths
 Xbeg=x0; Ybeg=y0;
 
 % store flowpaths
-FlowP=struct('x',num2cell(Xbeg),'y',num2cell(Ybeg),'t',num2cell(zeros(1,Npaths)),'done',num2cell(zeros(1,Npaths)));
+FlowP=struct('x',num2cell(Xbeg+zeros(maxits,1),1), ...
+             'y',num2cell(Ybeg+zeros(maxits,1),1), ...
+             't',num2cell(zeros(1,Npaths)), ...
+             'done',num2cell(false(1,Npaths)));
 queue=1:Npaths;
 
 % trace flowpaths ...
@@ -63,18 +66,23 @@ for its=1:maxits
     TRI = tsearchn([x;y].',tria.',[Xbeg;Ybeg].');
 
     % remove completed flowpaths from queue
-    done=find(isnan(TRI)); TRI(done)=[]; Xbeg(done)=[]; Ybeg(done)=[];
+    done=isnan(TRI); TRI(done)=[]; Xbeg(done)=[]; Ybeg(done)=[];
     % note completed flowpaths
-    if(~isempty(done)); [FlowP(queue(done)).done]=deal(1); queue(done)=[]; end;
+    for i = queue(done)
+        FlowP(i).x(its+1:end) = []; % flush buffers
+        FlowP(i).y(its+1:end) = [];
+        FlowP(i).done = true;
+    end
+    queue(done)=[];
     if(verbose)
         disp(['iteration ' num2str(its) ', finished ' num2str(Npaths-length(TRI)) ' of ' num2str(Npaths) ' flowpaths...']);
     end
-    if(isempty(TRI)) break; end;
+    if(isempty(TRI)); break; end
 
     % get vertex coordinates and velocities
     X=x(tria(:,TRI)); Y=y(tria(:,TRI));
     U=u(tria(:,TRI)); V=v(tria(:,TRI));
-    if(length(TRI)==1) X=X'; Y=Y'; U=U'; V=V'; end;
+    if(length(TRI)==1); X=X'; Y=Y'; U=U'; V=V'; end
 
     % compute transform to triangular (area) coordinates: L=A*P , P=[X;Y;1]
     detA = 1./( Y(1,:).*(X(3,:)-X(2,:)) + Y(2,:).*(X(1,:)-X(3,:)) + Y(3,:).*(X(2,:)-X(1,:)) );
@@ -104,21 +112,21 @@ for its=1:maxits
     a=[ B11.*b(1,:)+B12.*b(2,:)+B13.*b(3,:); B21.*b(1,:)+B22.*b(2,:)+B23.*b(3,:); B31.*b(1,:)+B32.*b(2,:)+B33.*b(3,:); ]*0.5;
 
     % as the default, assume that there is no time step limitation
-    dt_c=repmat(dt_max,size(a));
+    dt_c=zeros(size(a))+dt_max;
 
     for r=1:3
         % check determinant to see if any real roots
         Qdet=b(r,:).^2-4*a(r,:).*c(r,:);
-        ir=find((Qdet>0));
+        ir=Qdet>0;
 
-        if(~isempty(ir))
+        if any(ir)
             % for Qdet>0, compute larger of two real roots (i.e. the '+' one)
             % use stable method, to avoid catastrophic roundoff errors (from Numerical Recipes)
             q = -0.5*( b(r,ir) + sign(b(r,ir)).*sqrt(Qdet(ir)) );
             R=[q./a(r,ir);c(r,ir)./q];
 
             % find smallest positive root, and set dt_c
-            ineg=find(R<0); R(ineg)=dt_max;
+            R(R<0)=dt_max;
             dt_c(r,ir)= min(R);
 
         end
@@ -155,26 +163,26 @@ for its=1:maxits
     %-----------Note: The following code does not work too well!---------------
     %--------------------------------------------------------------------------
 
-    %--------------------------------------------------------------------------
-    % check for cyclic paths ... remove completed flowpaths from queue
-    %--------------------------------------------------------------------------
-    done=[];
-    for p=1:length(queue)
-        F=FlowP(queue(p));
-        if( norm([F.x(1)-Xend(p),F.y(1)-Yend(p)]) < norm([F.x(its)-Xend(p),F.y(its)-Yend(p)]) )
-            FlowP(queue(p)).x(its+2)=F.x(1); FlowP(queue(p)).y(its+2)=F.y(1); FlowP(queue(p)).t=0;
-            done=[done,p];
-        end
-    end
+%    %--------------------------------------------------------------------------
+%    % check for cyclic paths ... remove completed flowpaths from queue
+%    %--------------------------------------------------------------------------
+%    done=[];
+%    for p=1:length(queue)
+%        F=FlowP(queue(p));
+%        if( norm([F.x(1)-Xend(p),F.y(1)-Yend(p)]) < norm([F.x(its)-Xend(p),F.y(its)-Yend(p)]) )
+%            FlowP(queue(p)).x(its+2)=F.x(1); FlowP(queue(p)).y(its+2)=F.y(1); FlowP(queue(p)).t=0;
+%            done=[done,p];
+%        end
+%    end
 
     %--------------------------------------------------------------------------
     % check for stagnant zones ... remove completed flowpaths from queue
     %--------------------------------------------------------------------------
-    done=[done,find(dt_c>dt_max)];
+    done=dt_c>dt_max;
 
     % note completed flowpaths
-    TRI(done)=[]; Xbeg(done)=[]; Ybeg(done)=[];
-    if(~isempty(done)); [FlowP(queue(done)).done]=deal(1); queue(done)=[]; end;
+    Xbeg(done)=[]; Ybeg(done)=[];
+    if any(done); [FlowP(queue(done)).done]=deal(true); queue(done)=[]; end
 
     %--------------------------------------------------------------------------
     %--------------------------------------------------------------------------

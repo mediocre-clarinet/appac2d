@@ -52,7 +52,7 @@ if oper == 1
     foils.gamma = A \ RHS;
     Qtan = B*foils.gamma + cos(foils.theta);
 else
-    [wakes,foils.gamma,iter,E] = solveWake(foils,inv(A),RHS,CT,wakeOptions);
+    [wakes,foils.gamma,~,~] = solveWake(foils,inv(A),RHS,CT,wakeOptions);
     [U,V] = influence(foils.co,wakes,1);
     D = U.*cos(foils.theta) + V.*sin(foils.theta);
     Qtan = B*foils.gamma + cos(foils.theta) + D*wakes.gamma;
@@ -71,8 +71,8 @@ end
 
 % Data visualization %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if strcmpi(options.Plot,'on')
-    if oper == 1; flowVis(options,foils); end;
-    if oper == 2; flowVis(options,foils,wakes,k1,k2); end;
+    if oper == 1; flowVis(options,foils); end
+    if oper == 2; flowVis(options,foils,wakes,k1,k2); end
 end
 end
 
@@ -143,7 +143,7 @@ for i = 1:2:numel(NameValuePairs)-1
     k = strcmpi(names,NameValuePairs{i});
     if ~any(k)
         error('panel2d:invalidOptions', ...
-            sprintf('%s is not a recognized option.',NameValuePairs{i}));
+            '%s is not a recognized option.',NameValuePairs{i});
     end
     options.(names{k}) = NameValuePairs{i+1};
 end
