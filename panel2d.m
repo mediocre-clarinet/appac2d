@@ -1,9 +1,11 @@
 function [Cp,xc] = panel2d(surfaces,alphaDeg,varargin)
 % PANEL2D  Panel method in two dimensions.
-%   PANEL2D(SURFACES,ALPHADEG)
-%   PANEL2D(SURFACES,ALPHADEG,CT,XDISK)
-%   PANEL2D(SURFACES,ALPHADEG,CT,XDISK,WAKEOPTIONS)
-%   PANEL2D(___,NAME,VALUE)
+%   PANEL2D(SURFACES,ALPHADEG) runs a standard panel method.
+%   PANEL2D(SURFACES,ALPHADEG,CT,XDISK) runs the APPAC aeropropulsive analysis
+%   PANEL2D(SURFACES,ALPHADEG,CT,XDISK,WAKEOPTIONS) to pass options to APPAC
+%   PANEL2D(___,NAME,VALUE) to pass Name-Value arguments with any above syntax
+%
+%   See also INFLUENCE, SOLVEWAKE, FLOWVIS.
 [oper,CT,xDisk,wakeOptions,options] = parseInput(varargin);
 
 nSurfs = numel(surfaces);

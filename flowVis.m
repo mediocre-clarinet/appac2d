@@ -1,5 +1,11 @@
 function flowVis(options,foils,varargin)
-% FLOWVIS
+% FLOWVIS  Visualize flow around surfaces with bound vorticity.
+%   FLOWVIS(OPTIONS,FOILS,WAKES,K1,K2) creates a contour plot with overlaid
+%   streamlines using the style specified in OPTIONS. At minimum, the unified
+%   struct FOILS containing the solid surfaces must be given. If there is a
+%   powered wake, all of WAKES, K1, and K2 must be given where WAKES is the
+%   unified struct for the wake boundaries and K1 and K2 are indices specify-
+%   ing the nodes (one on each surface) where the actuator disk is located.
 
 % Meshing settings (not user defined)
 opts.kind = 'delfront';
@@ -12,6 +18,7 @@ colormap(cmap);
 hold on; axis image off;
 
 
+% Choose the line color to contrast with the colormap
 gs = cmap*[0.299;0.587;0.114]; % grayscale conversion
 LineColor = [0.8 0.8 0.8] - 0.6*round(gs(ceil(numel(gs)/2)));
 
