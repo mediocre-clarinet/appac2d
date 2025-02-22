@@ -8,17 +8,14 @@ filepath = fileparts( filename );
 addpath([filepath '/mesh2d']); initmsh();
 
 % Medium-scale high-geometric-complexity aeropropulsive problem %%%%%%%%%%%%%%
-surfaceFiles = {'dengwirda/mainElement.dat','onr-dep/nacelleVec30.dat', ...
-    'dengwirda/foreFlap.dat','dengwirda/aftFlap.dat'};
+surfaceFiles = {'dengwirda/mainElement.dat','dengwirda/nacelle.dat', ...
+    'dengwirda/foreFlap.dat','dengwirda/aftFlap.dat','onr-dep/krueger.dat'};
 
 for i = numel(surfaceFiles):-1:1
     fid = fopen([filepath '/airfoils/' surfaceFiles{i}],'r');
     surfaces{i} = cell2mat(textscan(fid,'%f%f','Delimiter',{'\t',','}));
     fclose(fid);
 end
-
-% Shift the nacelle to an appropriate position
-surfaces{2} = surfaces{2} + [-0.1471 0.073046];
 
 
 % Solve

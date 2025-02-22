@@ -79,6 +79,14 @@ while (E > opts.FunctionTolerance) && (iter < opts.MaxIterations)
     wakes.dy([N 2*N]) = 0; % far-field panels remain flat
     wakes.yo(  2:N  ) = wakes.yo(1)   + cumsum(wakes.dy(  1:N-1  ));
     wakes.yo(N+2:2*N) = wakes.yo(N+1) + cumsum(wakes.dy(N+1:2*N-1));
+    % Handle wakes crossing
+    if wakes.yo(N) >= wakes.yo(2*N)
+        yd = wakes.yo(2*N) - wakes.yo(N) - 0.025;
+        % Rebuild YO of the lower wake directly rather than through CUMSUM
+        wakes.yo(2:N) = wakes.yo(2:N) + yd* ...
+            (wakes.xo(2:N)-wakes.xo(1))/opts.WakeLengthChords;
+        wakes.dy(1:N-1) = diff(wakes.yo(1:N));
+    end
     wakes.theta = atan2(wakes.dy,wakes.dx);
     wakes.co(:,2) = wakes.yo + wakes.dy/2;
 

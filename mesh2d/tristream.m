@@ -63,7 +63,15 @@ queue=1:Npaths;
 for its=1:maxits
 
     % find containing triangle
-    TRI = tsearchn([x;y].',tria.',[Xbeg;Ybeg].');
+%    TRI = tsearchn([x;y].',tria.',[Xbeg;Ybeg].');
+    if its == 1
+        [tp,tj,tree] = findtria([x;y].',tria.',[Xbeg;Ybeg].');
+    else
+        [tp,tj] = findtria([x;y].',tria.',[Xbeg;Ybeg].',tree);
+    end
+    TRI = nan(size(tp,1),1);
+    in = tp(:,1) > 0;
+    TRI(in) = tj(tp(in,1));
 
     % remove completed flowpaths from queue
     done=isnan(TRI); TRI(done)=[]; Xbeg(done)=[]; Ybeg(done)=[];
