@@ -27,6 +27,9 @@ k = M;
 for i = nSurfs:-1:1
     k = k - foils.m(i); % shift indices to rows in array for writing
     coords = surfaces{i}*R; % rotate coordinates by AoA
+    if det(surfaces{i}([2 end-1],:)-surfaces{i}(1,:)) > 0
+        coords = flipud(coords); % method requires CW defined coordinates
+    end
     foils.xo(1+k:foils.m(i)+k,:) = coords(1:end-1,1);
     foils.yo(1+k:foils.m(i)+k,:) = coords(1:end-1,2);
     foils.dx(1+k:foils.m(i)+k,:) = diff(coords(:,1));
