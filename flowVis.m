@@ -11,25 +11,10 @@ function flowVis(options,foils,varargin)
 opts.kind = 'delfront';
 opts.rho2 = 1;
 
+bb = [min(foils.co),max(foils.co)]; % bounding box
+bb = bb + [-0.7 -0.7 0.7 0.5];
 
-figure;
-cmap = crameri(options.Colormap);
-colormap(cmap);
-hold on; axis image off;
-
-
-% Choose the line color to contrast with the colormap
-gs = cmap*[0.299;0.587;0.114]; % grayscale conversion
-LineColor = [0.8 0.8 0.8] - 0.6*round(gs(ceil(numel(gs)/2)));
-
-if strcmpi(options.Mesh,'on')
-    EdgeColor = LineColor;
-else
-    EdgeColor = 'none';
-end
-
-
-if nargin ~= 2
+if nargin == 5
     wakes = varargin{1};
     k1 = varargin{2};
     k2 = varargin{3};
@@ -40,14 +25,16 @@ if nargin ~= 2
     wakes.yo(1:N) = wakes.yo(1:N) + wakes.dy(1:N);
     wakes.dx(1:N) = -wakes.dx(1:N);
     wakes.dy(1:N) = -wakes.dy(1:N);
-    wakes.theta(1:N) = atan2(wakes.dy(1:N),wakes.dx(1:N));
+    wakes.theta(1:N) = wakes.theta(1:N)+pi - ceil(wakes.theta(1:N)/2/pi)*2*pi;
+%    wakes.theta(1:N) = atan2(wakes.dy(1:N),wakes.dx(1:N));
 
     %--------------------------------------- Mesh jet volume
-    node = [foils.co(k1+1:foils.m(1),:); ...
-            wakes.co(1:N-1,:); ...
-            flipud(wakes.co(N+1:2*N-1,:)); ...
-            foils.co(foils.m(1)+(1:k2-1),:)];
-%    node([false;node(1:end-1,1)>=4],:) = [];
+    k3 = find(wakes.co(  1:N  ,1)>=bb(3),1);
+    k4 = find(wakes.co(N+1:2*N,1)>=bb(3),1) + N;
+    node = [flipud(wakes.co(N+1:k4,:)); ...
+            foils.co(foils.m(1)+(1:k2-1),:); ...
+            foils.co(k1+1:foils.m(1),:); ...
+            wakes.co(1:k3,:)];
 
     edge = (1:size(node,1)).' + [0 1]; edge(end,2) = 1;
 
@@ -61,13 +48,13 @@ if nargin ~= 2
     v{1} = v{1} + V*wakes.gamma;
 
     %------------------------------------- Mesh outer volume
-    node = [flipud(wakes.co(1:N-1,:)); ...
+    node = [flipud(wakes.co(1:k3,:)); ...
             foils.co(1:k1+1,:); ...
             foils.co(foils.m(1)+(k2-1:foils.m(2)),:); ...
-            wakes.co(N+1:2*N-1,:); ...
-            wakes.co(2*N-1,1) 2; ...
-            -2 2;-2 -2; ...
-            wakes.co(N-1,1) -2];
+            wakes.co(N+1:k4,:); ...
+            wakes.co(k4,1) bb(4); ...
+            bb(1) bb(4);bb(1) bb(2); ...
+            wakes.co(k3,1) bb(2)];
 
     edge = (1:size(node,1)).' + [0 1]; edge(end,2) = 1;
 
@@ -104,15 +91,31 @@ end
 
 data.q = sqrt(data.u.^2 + data.v.^2);
 data.p = 1 - data.q.^2;
-if nargin ~= 2
+if nargin == 5
     CT = 0.5*((abs(wakes.gamma(N+1)) + 1)^2 - 1);
     data.p(1:numel(u{1})) = data.p(1:numel(u{1})) + 2*CT;
 end
+
+% Present %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+figure;
+cmap = crameri(options.Colormap);
+colormap(cmap);
+hold on; axis image off;
+
+% Choose the line color to contrast with the colormap
+LineColor = [0.8 0.8 0.8] - ...
+    0.6*round(cmap(ceil(size(cmap,1)/2),:)*[0.299;0.587;0.114]);
 
 if strcmpi(options.CData,'p') || strcmpi(options.CData,'v')
     pivot = 0;
 else
     pivot = 1;
+end
+
+if strcmpi(options.Mesh,'on')
+    EdgeColor = [0.5 0.5 0.5]; % slightly off-color to streamlines
+else
+    EdgeColor = 'none';
 end
 
 % Create the contour plot %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -123,7 +126,15 @@ cl = get(gca,'CLim');
 set(gca,'CLim',max(abs(cl-pivot))*[-1 1]+pivot);
 
 % Draw streamlines %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-FlowP = tristream(TRI,VTX(:,1),VTX(:,2),data.u,data.v,zeros(1,51)-1.99,-1.5:0.05:1);
+FlowP = tristream(TRI,VTX(:,1),VTX(:,2),data.u,data.v, ...
+    zeros(1,51)+bb(1)+0.01,linspace(bb(2)+0.01,bb(4)-0.01,51));
 for i = 1:numel(FlowP)
     plot(FlowP(i).x,FlowP(i).y,'-','Color',LineColor);
 end
+
+% Configure window
+axis([bb(1)+0.25 bb(3)-0.25 bb(2)+0.4 bb(4)-0.2]);
+pb = get(gca,'PlotBoxAspectRatio');
+pos = get(gcf,'Position'); pos(3) = pos(4)*pb(1);
+set(gcf,'Position',pos);
+set(gca,'Position',[0 0 1 1]);
