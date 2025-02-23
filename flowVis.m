@@ -1,4 +1,4 @@
-function flowVis(options,foils,varargin)
+function fig = flowVis(options,foils,varargin)
 % FLOWVIS  Visualize flow around surfaces with bound vorticity.
 %   FLOWVIS(OPTIONS,FOILS,WAKES,K1,K2) creates a contour plot with overlaid
 %   streamlines using the style specified in OPTIONS. At minimum, the unified
@@ -97,7 +97,7 @@ if nargin == 5
 end
 
 % Present %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-figure;
+fig = figure;
 cmap = crameri(options.Colormap);
 colormap(cmap);
 hold on; axis image off;
@@ -135,6 +135,8 @@ end
 % Configure window
 axis([bb(1)+0.25 bb(3)-0.25 bb(2)+0.4 bb(4)-0.2]);
 pb = get(gca,'PlotBoxAspectRatio');
-pos = get(gcf,'Position'); pos(3) = pos(4)*pb(1);
-set(gcf,'Position',pos);
+pos = get(fig,'Position'); pos(3) = pos(4)*pb(1);
+set(fig,'Position',pos);
 set(gca,'Position',[0 0 1 1]);
+
+%print(fig,'-r300','multielement-1','-dpng');
