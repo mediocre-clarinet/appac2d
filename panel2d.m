@@ -61,16 +61,23 @@ else
     Qtan = B*foils.gamma + cos(foils.theta) + D*wakes.gamma;
 end
 
-Cp = mat2cell(1 - Qtan.^2, foils.m);
+% Calculate coefficients %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Cparr = 1 - Qtan.^2;
+
 xc = mat2cell(foils.co*R(1,:).', foils.m);
 
 if oper == 2
     % Correct Cp aft of the actuator disk where the total pressure is higher
     k1 = find(xc{1} < xDisk, 1, 'last');
     k2 = find(xc{2} < xDisk, 1, 'first');
-    Cp{1}(k1+1:end) = Cp{1}(k1+1:end) + 2*CT;
-    Cp{2}(1:k2-1) = Cp{2}(1:k2-1) + 2*CT;
+    Cparr(k1+1:foils.m(1)+k2-1) = Cparr(k1+1:foils.m(1)+k2-1) + 2*CT;
 end
+
+Cl = -Cparr.'*foils.dx;
+Cd =  Cparr.'*foils.dy;
+disp(Cl); disp(Cd);
+
+Cp = mat2cell(Cparr, foils.m);
 
 % Data visualization %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if strcmpi(options.Plot,'on')
