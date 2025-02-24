@@ -75,7 +75,8 @@ end
 
 Cl = -Cparr.'*foils.dx;
 Cd =  Cparr.'*foils.dy;
-disp(Cl); disp(Cd);
+Cm = (Cparr.*foils.dx).'*foils.co(:,1) + (Cparr.*foils.dy).'*foils.co(:,2);
+Cm25 = Cm + 0.25*Cl;
 
 Cp = mat2cell(Cparr, foils.m);
 
@@ -84,6 +85,9 @@ if strcmpi(options.Plot,'on')
     if oper == 1; flowVis(options,foils); end
     if oper == 2; flowVis(options,foils,wakes,k1,k2); end
 end
+
+% Print integrated values at the very end
+fprintf(1,'%+4s: %8.5f\n','Cl',Cl,'Cd',Cd,'Cm25',Cm25);
 end
 
 
