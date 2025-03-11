@@ -1,4 +1,4 @@
-function [Cp,xc] = panel2d(surfaces,alphaDeg,varargin)
+function [Cp,xc,varargout] = panel2d(surfaces,alphaDeg,varargin)
 % PANEL2D  Panel method in two dimensions.
 %   PANEL2D(SURFACES,ALPHADEG) runs a standard panel method.
 %   PANEL2D(SURFACES,ALPHADEG,CT,XDISK) runs the APPAC aeropropulsive analysis
@@ -54,11 +54,13 @@ RHS = [sin(foils.theta);zeros(nSurfs,1)];
 if oper == 1
     foils.gamma = A \ RHS;
     Qtan = B*foils.gamma + cos(foils.theta);
+    out{1} = foils;
 else
     [wakes,foils.gamma,~,~] = solveWake(foils,inv(A),RHS,CT,wakeOptions);
     [U,V] = influence(foils.co,wakes,1);
     D = U.*cos(foils.theta) + V.*sin(foils.theta);
     Qtan = B*foils.gamma + cos(foils.theta) + D*wakes.gamma;
+    out = {foils,wakes};
 end
 
 % Calculate coefficients %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -88,6 +90,11 @@ end
 
 % Print integrated values at the very end
 fprintf(1,'%+4s: %8.5f\n','Cl',Cl,'Cd',Cd,'Cm25',Cm25);
+
+nout = max(nargout,1) - 2;
+for i = 1:nout
+    varargout{i} = out{i};
+end
 end
 
 
