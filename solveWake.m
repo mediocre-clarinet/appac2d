@@ -43,8 +43,8 @@ if strcmpi(opts.Display,'iter') || strcmpi(opts.Display,'final')
         plot(foils.xo(k+[1:foils.m(i) 1]),foils.yo(k+[1:foils.m(i) 1]),'k-');
         k = k + foils.m(i);
     end
-    h(1) = plot(wakes.co(1:N-1,1),wakes.co(1:N-1,2),'b-');
-    h(2) = plot(wakes.co(N+1:2*N-1,1),wakes.co(N+1:2*N-1,2),'r-');
+    h(1) = plot(wakes.xo(1:N),wakes.yo(1:N),'b-');
+    h(2) = plot(wakes.xo(N+1:2*N),wakes.yo(N+1:2*N),'r-');
 end
 
 iter = 0;
@@ -53,8 +53,8 @@ while (E > opts.FunctionTolerance) && (iter < opts.MaxIterations)
     iter = iter + 1;
 
     if strcmpi(opts.Display,'iter')
-        set(h(1),'YData',wakes.co(1:N-1,2));
-        set(h(2),'YData',wakes.co(N+1:2*N-1,2));
+        set(h(1),'YData',wakes.yo(1:N));
+        set(h(2),'YData',wakes.yo(N+1:2*N));
         drawnow;
     end
 
@@ -118,7 +118,7 @@ while (E > opts.FunctionTolerance) && (iter < opts.MaxIterations)
 end
 
 if strcmpi(opts.Display,'iter') || strcmpi(opts.Display,'final')
-    set(h(1),'YData',wakes.co(1:N-1,2));
-    set(h(2),'YData',wakes.co(N+1:2*N-1,2));
+    set(h(1),'YData',wakes.yo(1:N));
+    set(h(2),'YData',wakes.yo(N+1:2*N));
     drawnow;
 end
