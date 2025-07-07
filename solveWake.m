@@ -12,29 +12,24 @@ function [wakes,gamma,iter,E] = solveWake(foils,Ainv,RHS,CT,opts)
 %   7. If the new wake circulation is close to the previous solution, exit the
 %      program, else return to step 2
 
-% Attach line wake to the trailing edge of each propulsive element %%%%%%%%%%%
+% Attach flat wake to the trailing edge of each propulsive element %%%%%%%%%%%
 N = opts.NumPanels + 1; % add far-field panel to the panel count
 wakes.m = [N N];
-% Calculate the direction to which the initial wakes are aligned
-d1 = sqrt(foils.dx(foils.m(1)  )^2 + foils.dy(foils.m(1)  )^2);
-d2 = sqrt(foils.dx(foils.m(1)+1)^2 + foils.dy(foils.m(1)+1)^2);
-rx = 0.5*(foils.dx(foils.m(1))/d1 - foils.dx(foils.m(1)+1)/d2);
-ry = 0.5*(foils.dy(foils.m(1))/d1 - foils.dy(foils.m(1)+1)/d2);
 for i = 2:-1:1
     k = (i-1)*N+(1:N);
     if strcmpi(opts.NodeSpacing,'cosine')
-        stencil = opts.WakeLengthChords*(1-cos(linspace(0,pi/2,N))).';
+        wakes.xo(k,:) = foils.xo(1+(i-1)*foils.m(1)) + ...
+            opts.WakeLengthChords*(1-cos(linspace(0,pi/2,N))).';
     elseif strcmpi(opts.NodeSpacing,'uniform')
-        stencil = linspace(0,opts.WakeLengthChords,N).';
+        wakes.xo(k,:) = foils.xo(1+(i-1)*foils.m(1)) + ...
+            linspace(0,opts.WakeLengthChords,N).';
     end
-    wakes.xo(k,:) = foils.xo(1+(i-1)*foils.m(1)) + rx*stencil;
-    wakes.yo(k,:) = foils.yo(1+(i-1)*foils.m(1)) + ry*stencil;
-    wakes.dx(k,:) = [diff(wakes.xo(k)); 1e3*rx];
-    wakes.dy(k,:) = [diff(wakes.yo(k)); 1e3*ry];
+    wakes.yo(k,:) = foils.yo(1+(i-1)*foils.m(1)) + zeros(N,1);
+    wakes.dx(k,:) = [diff(wakes.xo(k)); 1e3];
 end
-wakes.theta = zeros(2*N,1) + atan2(ry,rx);
-wakes.co = [wakes.xo+wakes.dx/2 wakes.yo+wakes.dy/2];
-wakes.ds = sqrt(wakes.dx.^2 + wakes.dy.^2);
+wakes.dy = zeros(2*N,1);
+wakes.theta = zeros(2*N,1);
+wakes.co = [wakes.xo+wakes.dx/2 wakes.yo];
 
 % Create initial guess for wake circulation %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 gammaInf = sqrt(2*CT + 1) - 1;
@@ -58,9 +53,7 @@ while (E > opts.FunctionTolerance) && (iter < opts.MaxIterations)
     iter = iter + 1;
 
     if strcmpi(opts.Display,'iter')
-        set(h(1),'XData',wakes.xo(1:N));
         set(h(1),'YData',wakes.yo(1:N));
-        set(h(2),'XData',wakes.xo(N+1:2*N));
         set(h(2),'YData',wakes.yo(N+1:2*N));
         drawnow;
     end
@@ -82,13 +75,8 @@ while (E > opts.FunctionTolerance) && (iter < opts.MaxIterations)
     v = v + V*wakes.gamma;
 
     % Update wake shape %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%    wakes.dy = v./u.*wakes.dx;
-%    wakes.dy([N 2*N]) = 0; % far-field panels remain flat
-    Vbar = sqrt(u.*u + v.*v);
-    wakes.dx = u./Vbar.*wakes.ds;
-    wakes.dy = v./Vbar.*wakes.ds;
-    wakes.xo(  2:N  ) = wakes.xo(1)   + cumsum(wakes.dx(  1:N-1  ));
-    wakes.xo(N+2:2*N) = wakes.xo(N+1) + cumsum(wakes.dx(N+1:2*N-1));
+    wakes.dy = v./u.*wakes.dx;
+    wakes.dy([N 2*N]) = 0; % far-field panels remain flat
     wakes.yo(  2:N  ) = wakes.yo(1)   + cumsum(wakes.dy(  1:N-1  ));
     wakes.yo(N+2:2*N) = wakes.yo(N+1) + cumsum(wakes.dy(N+1:2*N-1));
     % Handle wakes crossing
@@ -100,18 +88,17 @@ while (E > opts.FunctionTolerance) && (iter < opts.MaxIterations)
         wakes.dy(1:N-1) = diff(wakes.yo(1:N));
     end
     wakes.theta = atan2(wakes.dy,wakes.dx);
-    wakes.co(:,1) = wakes.xo + wakes.dx/2;
     wakes.co(:,2) = wakes.yo + wakes.dy/2;
 
     % Update wake circulation %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    g = CT./Vbar;
+    g = CT./sqrt(u.*u + v.*v);
     g(N+1:2*N) = -g(N+1:2*N);
     % It is unclear if interpolating over x (faster) is less accurate than
     % interpolating over panel length (slower)
     gnew(  2:N    ) = g(  1:N-1  ) + diff(g(  1:N  )).* ...
-        wakes.ds(  1:N-1  )./(wakes.ds(  1:N-1  )+wakes.ds(  2:N  ));
+        wakes.dx(  1:N-1  )./(wakes.dx(  1:N-1  )+wakes.dx(  2:N  ));
     gnew(N+3:2*N+1) = g(N+1:2*N-1) + diff(g(N+1:2*N)).* ...
-        wakes.ds(N+1:2*N-1)./(wakes.ds(N+1:2*N-1)+wakes.ds(N+2:2*N));
+        wakes.dx(N+1:2*N-1)./(wakes.dx(N+1:2*N-1)+wakes.dx(N+2:2*N));
     gnew(1)   = 2*g(1)   - gnew(2);
     gnew(N+2) = 2*g(N+1) - gnew(N+3);
     % Decay circulation to the far-field value
