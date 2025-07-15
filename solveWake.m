@@ -144,7 +144,7 @@ function [xout,yout,traj] = initWake(foils,gamma)
         y0([i i+2]) = [foils.xo(idx(1)) foils.yo(idx(1))] + ...
             c/sqrt(c(1)*c(1) + c(2)*c(2)) * 0.25*min(R);
     end
-    [t,y] = ode23(@objfun,[0 1],y0);
+    [t,y] = ode45(@objfun,[0 1],y0);
     N = size(y,1);
     % Anchor first point to exactly the trailing edge
     y(1,1:2) = foils.xo([1 foils.m(1)+1]);

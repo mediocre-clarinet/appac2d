@@ -72,7 +72,8 @@ if oper == 2
     % Correct Cp aft of the actuator disk where the total pressure is higher
     k1 = find(xc{1} < xDisk, 1, 'last');
     k2 = find(xc{2} < xDisk, 1, 'first');
-    Cparr(k1+1:foils.m(1)+k2-1) = Cparr(k1+1:foils.m(1)+k2-1) + 2*CT;
+    idx = getCpCorrectionIds(foils,wakes,k1,k2);
+    Cparr(idx) = Cparr(idx) + 2*CT;
 end
 
 Cl = -Cparr.'*foils.dx;
@@ -168,4 +169,32 @@ for i = 1:2:numel(NameValuePairs)-1
     end
     options.(names{k}) = NameValuePairs{i+1};
 end
+end
+
+function in = getCpCorrectionIds(foils,wakes,k1,k2)
+% GETCPCORRECTIONIDS  Get indices of control points that need Cp correction
+%   The method of creating the bounding polygon for the domain of increased
+%   total pressure is taken from FLOWVIS.
+bb = [min(foils.co),max(foils.co)]; % bounding box
+bb = bb + [-0.7 -0.7 0.7 0.5];
+
+N = wakes.m(1);
+% Distinguish jet and outer flow eval by making one wake left-running
+wakes.xo(1:N) = wakes.xo(1:N) + wakes.dx(1:N);
+wakes.yo(1:N) = wakes.yo(1:N) + wakes.dy(1:N);
+wakes.dx(1:N) = -wakes.dx(1:N);
+wakes.dy(1:N) = -wakes.dy(1:N);
+wakes.theta(1:N) = wakes.theta(1:N)+pi - ceil(wakes.theta(1:N)/2/pi)*2*pi;
+
+%--------------------------------------- Mesh jet volume
+k3 = find(wakes.co(  1:N  ,1)>=bb(3),1);
+k4 = find(wakes.co(N+1:2*N,1)>=bb(3),1) + N;
+node = [flipud(wakes.co(N+1:k4,:)); ...
+        foils.co(foils.m(1)+(1:k2-1),:); ...
+        foils.co(k1+1:foils.m(1),:); ...
+        wakes.co(1:k3,:)];
+
+edge = (1:size(node,1)).' + [0 1]; edge(end,2) = 1;
+
+in = inpoly2(foils.co,node,edge);
 end
