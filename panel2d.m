@@ -30,6 +30,7 @@ for i = nSurfs:-1:1
     if det(surfaces{i}([2 end-1],:)-surfaces{i}(1,:)) > 0
         coords = flipud(coords); % method requires CW defined coordinates
     end
+    coords(:,2) = coords(:,2)+1;
     foils.xo(1+k:foils.m(i)+k,:) = coords(1:end-1,1);
     foils.yo(1+k:foils.m(i)+k,:) = coords(1:end-1,2);
     foils.dx(1+k:foils.m(i)+k,:) = diff(coords(:,1));
@@ -38,15 +39,30 @@ end
 foils.theta = atan2(foils.dy,foils.dx);
 foils.co = [foils.xo+foils.dx/2 foils.yo+foils.dy/2];
 
+
 % Create aerodynamic influence coefficient matrix %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-A = zeros(M+nSurfs);
+
+%changes
+A_original = zeros(M+nSurfs);
+[U,V] = influence(foils.co,foils,1);
+A_original(1:M,:) = -U.*sin(foils.theta) + V.*cos(foils.theta);
+
+
+
+A_mirrored = zeros(M+nSurfs);
+mirrored_foil = foils.co;
+mirrored_foil(:,2) = -mirrored_foil(:,2);
+[U_mirrored,V_mirrored] = influence(mirrored_foil,foils,1);
+A_mirrored(1:M,:) = -U_mirrored.*sin(foils.theta) + V_mirrored.*cos(foils.theta);
+
+A = A_original+A_mirrored;
+
 for i = 1:nSurfs % Kutta condition
     A(M+i,k+1) = 1;
     A(M+i,k+foils.m(i)+1) = 1;
     k = k + foils.m(i) + 1;
 end
-[U,V] = influence(foils.co,foils,1);
-A(1:M,:) = -U.*sin(foils.theta) + V.*cos(foils.theta); % normal component
+
 B = U.*cos(foils.theta) + V.*sin(foils.theta); % tangent component
 RHS = [sin(foils.theta);zeros(nSurfs,1)];
 
@@ -66,7 +82,7 @@ end
 % Calculate coefficients %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Cparr = 1 - Qtan.^2;
 
-xc = mat2cell(foils.co*R(1,:).', foils.m);
+xc = mat2cell((foils.co-[0 1])*R(1,:).', foils.m);
 
 if oper == 2
     % Correct Cp aft of the actuator disk where the total pressure is higher
