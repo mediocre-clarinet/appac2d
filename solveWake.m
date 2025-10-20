@@ -44,6 +44,8 @@ if strcmpi(opts.Display,'iter') || strcmpi(opts.Display,'final')
     hold on; axis image; k = 0;
     for i = 1:numel(foils.m)
         plot(foils.xo(k+[1:foils.m(i) 1]),foils.yo(k+[1:foils.m(i) 1]),'k-');
+        xlabel('x/C')
+        xlabel('h/b')
         k = k + foils.m(i);
     end
     h(1) = plot(wakes.xo(1:N),wakes.yo(1:N),'b.-');
